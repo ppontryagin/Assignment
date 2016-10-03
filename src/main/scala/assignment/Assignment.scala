@@ -6,12 +6,14 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
 
-
 object Assignment {
 
+  val POOL_SIZE = 4
+  val THREADS = 10
+  // deadline to wait for threads
   val WAIT_TIMEOUT = 15.seconds
 
-  // 1 Assignement
+  // 1 Part of Assignement
   /** Takes a list as argument and outputs a new list with the unique elements
     * of the argument list in order of frequency
     * (Listof T) -> (Listof T)
@@ -23,34 +25,33 @@ object Assignment {
       .map { case (k, v) => k -> v.length }
       .toList
       .sortBy(_._2)
-      .reverse
       .map(x => x._1)
+      .reverse
 
-  // 2 Assignement
+  // 2 Part of Assignement
   // 2.1 Ported to Scala
 
   // asynchronousOperation executes operationDone function with random delay(1000)
   // Given Javascript version was tested in https://eng1003.monash/playground/ and
-  // it always executes operationDone in correct order for some reason.
+  // it always executes operationDone in sequential correct order for some reason.
   /** run should perform three asynchronous operations and then print
     * “OK” when all operations are finished. However, the current implementation prints “OK”
     * three times.
     */
-  def asynchronousOperation(operationDone: Unit) =
-  //    Future {
-  {
+  def asynchronousOperation(operationDone: Unit) = {
     Thread.sleep(Random.nextInt(1000))
     operationDone
   }
 
-  def run = {
+  // operationDone emulates some job to be done
+  def operationDone(f: Unit) = f
 
+  def run = {
+    // customize the execution context to use default
     implicit lazy val ec = ExecutionContext.global
 
-    def operationDone(i: String) = println("OK: " + i)
-
     val tasks = for (i <- 0 until 3) yield Future {
-      asynchronousOperation(operationDone(i.toString));
+      asynchronousOperation(operationDone(println("OK: " + i)));
     }
   }
 
@@ -59,10 +60,8 @@ object Assignment {
     * “OK” when all operations are finished.
     */
   def runWait = {
+    // customize the execution context to use default
     implicit lazy val ec = ExecutionContext.global
-
-
-    def operationDone(i: String) = println("OK: " + i)
 
     val tasks = for (i <- 0 until 3) yield Future {
       asynchronousOperation(operationDone(i.toString));
@@ -76,14 +75,12 @@ object Assignment {
   /** runN perform N asynchronous operations and then print
     * “OK” when all operations are finished.
     */
-  def runN(parallelism: Integer) = {
+  def runN(threads: Integer) = {
+    // customize the execution context to use default
     implicit lazy val ec = ExecutionContext.global
 
-
-    def operationDone(i: String) = println("OK: " + i)
-
-    val tasks = for (i <- 0 until parallelism) yield Future {
-      asynchronousOperation(operationDone(i.toString))
+    val tasks = for (i <- 0 until threads) yield Future {
+      asynchronousOperation(operationDone(println("OK: " + i)))
     }
 
     Await.result(Future.sequence(tasks), 15.seconds)
@@ -95,29 +92,25 @@ object Assignment {
   /** runNWithPool perform N asynchronous operations using ThreadPool and then print
     * “OK” when all operations are finished.
     */
-  def runNWithPool(parallelism: Integer, poolSize: Integer) = {
+  def runNWithPool(threads: Integer, poolSize: Integer) = {
     // customize the execution context to use the specified number of threads
     implicit lazy val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(poolSize))
 
-    def operationDone(i: String) = println("OK: " + i)
-
-    val tasks = for (i <- 0 until parallelism) yield Future {
-      asynchronousOperation(operationDone(i.toString))
+    val tasks = for (i <- 0 until threads) yield Future {
+      asynchronousOperation(operationDone(println("OK: " + i)))
     }
 
     Await.result(Future.sequence(tasks), 15.seconds)
     operationDone("Done")
   }
 
-
   def main(args: Array[String]): Unit = {
     while (true) {
-      runNWithPool(10, 1)
-      //runN(10)
-      println(java.lang.Thread.activeCount())
-      println("Finished 10 asynchronous operations")
+      //run
+      runNWithPool(THREADS, POOL_SIZE)
+      //runN(THREADS)
+      printf("Finished %s asynchronous operations\n", THREADS)
       Thread.sleep(Random.nextInt(1000))
-
     }
   }
 }
