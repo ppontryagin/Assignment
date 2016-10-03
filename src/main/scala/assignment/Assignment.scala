@@ -64,11 +64,11 @@ object Assignment {
     implicit lazy val ec = ExecutionContext.global
 
     val tasks = for (i <- 0 until 3) yield Future {
-      asynchronousOperation(operationDone(i.toString));
+      asynchronousOperation(operationDone(Nil));
     }
 
     Await.result(Future.sequence(tasks), WAIT_TIMEOUT)
-    operationDone("Done")
+    operationDone(println("OK"))
   }
 
   // 2.3 Refactor the code to handle N operations.
@@ -80,11 +80,11 @@ object Assignment {
     implicit lazy val ec = ExecutionContext.global
 
     val tasks = for (i <- 0 until threads) yield Future {
-      asynchronousOperation(operationDone(println("OK: " + i)))
+      asynchronousOperation(operationDone(Nil))
     }
 
     Await.result(Future.sequence(tasks), 15.seconds)
-    operationDone("Done")
+    operationDone(println("OK"))
   }
 
   // 2.4 Refactor the code to handle N operations, while making sure that no more than M are
@@ -97,18 +97,20 @@ object Assignment {
     implicit lazy val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(poolSize))
 
     val tasks = for (i <- 0 until threads) yield Future {
-      asynchronousOperation(operationDone(println("OK: " + i)))
+      asynchronousOperation(operationDone(Nil))
     }
 
     Await.result(Future.sequence(tasks), 15.seconds)
-    operationDone("Done")
+    operationDone(println("OK"))
   }
 
   def main(args: Array[String]): Unit = {
     while (true) {
-      //run
+      // run
+      // runWait
+      // runN(THREADS)
+
       runNWithPool(THREADS, POOL_SIZE)
-      //runN(THREADS)
       printf("Finished %s asynchronous operations\n", THREADS)
       Thread.sleep(Random.nextInt(1000))
     }
